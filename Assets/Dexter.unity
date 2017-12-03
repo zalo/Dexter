@@ -16460,7 +16460,9 @@ TextMesh:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1097574695}
-  m_Text: Hello World
+  m_Text: 'Dexter Status
+
+'
   m_OffsetZ: 0
   m_CharacterSize: 0.012
   m_LineSpacing: 1
@@ -23031,7 +23033,7 @@ Transform:
   m_PrefabParentObject: {fileID: 400568, guid: ac7d57aa21e28b14bac824287a5ccc81, type: 3}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1634850590}
-  m_LocalRotation: {x: -0.26940468, y: 0.6537742, z: -0.26940453, w: 0.65377486}
+  m_LocalRotation: {x: -0.2694047, y: 0.65377426, z: -0.26940456, w: 0.6537749}
   m_LocalPosition: {x: 0.043940976, y: -0.017919699, z: 0.017789023}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
@@ -25542,7 +25544,7 @@ Transform:
   m_PrefabParentObject: {fileID: 400230, guid: ac7d57aa21e28b14bac824287a5ccc81, type: 3}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1817282667}
-  m_LocalRotation: {x: -0.32504734, y: 0.62796825, z: -0.62796825, w: -0.32504767}
+  m_LocalRotation: {x: -0.32504737, y: 0.6279683, z: -0.6279683, w: -0.3250477}
   m_LocalPosition: {x: -0.050480045, y: 0.077149466, z: 0.07138482}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
