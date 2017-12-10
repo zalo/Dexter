@@ -20,7 +20,7 @@ public class MoveToIK : MonoBehaviour {
     }
   }
 
-  float getAngle(Quaternion quat, Vector3 axis) {
+  public static float getAngle(Quaternion quat, Vector3 axis) {
     Quaternion normalized = Quaternion.Lerp(quat, quat, 0f);
     float quatAngle; Vector3 quatAxis;
     normalized.ToAngleAxis(out quatAngle, out quatAxis);

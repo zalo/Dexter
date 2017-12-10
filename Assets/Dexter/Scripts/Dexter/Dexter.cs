@@ -15,6 +15,11 @@ public class Dexter : MonoBehaviour {
   Quaternion[] jointAngles = new Quaternion[5];
 
   public TextMesh text;
+  float lastEndRot = 0f;
+  public float lastEndRotTime;
+  float lastRotatorRot = 0f;
+  public float lastRotatorRotTime;
+  public float lastRotUpdateTime;
 
   void Start() {
     for(int i = 0; i<jointBuffer.Length; i++) {
@@ -28,7 +33,8 @@ public class Dexter : MonoBehaviour {
       dexterSocket.Connect(new IPAddress(ip), 50000);
       if (dexterSocket.Connected) {
         Debug.Log("Connected to " + dexterSocket.Client.RemoteEndPoint);
-        //sendStringToDexter(dexterSocket, "S MaxSpeed 193868;");
+        //sendStringToDexter(dexterSocket, "S StartSpeed 10000;");
+        //sendStringToDexter(dexterSocket, "S MaxSpeed 250000;");
         sendStringToDexter(dexterSocket, "a 0 0 0 0 0;");
       }
     } catch (Exception e) {
@@ -50,9 +56,21 @@ public class Dexter : MonoBehaviour {
     for(int i=0; i<5; i++) {
       Quaternion jointRot = Quaternion.identity;
       if (jointBuffer[i].TryDequeue(out jointRot)) {
-        jointAngles[i] = Quaternion.Slerp(joints[i].localRotation, jointRot, 0.8f);
+        jointAngles[i] = Quaternion.Slerp(joints[i].localRotation, jointRot, 1f);
+        joints[i].localRotation = jointAngles[i];
+
+        if (i == 3) {
+          float angle = MoveToIK.getAngle(joints[i].localRotation, Vector3.right) / 90f;
+          Debug.DrawLine(((lastRotUpdateTime - lastRotatorRotTime) * Vector3.right) + (Vector3.up * lastRotatorRot), ((Time.time - lastRotatorRotTime) * Vector3.right) + (Vector3.up * angle), Color.green, 5f);
+          lastRotatorRot = angle;
+        } else if (i == 4) {
+          float angle = MoveToIK.getAngle(joints[i].localRotation, Vector3.right) / 90f;
+          Debug.DrawLine(((lastRotUpdateTime - lastEndRotTime) * Vector3.right) + (Vector3.up * lastEndRot), ((Time.time - lastEndRotTime) * Vector3.right) + (Vector3.up * angle), Color.red, 5f);
+          lastEndRot = angle;
+          lastRotUpdateTime = Time.time;
+        }
       }
-      joints[i].localRotation = jointAngles[i];
+
     }
 
     string toDisplay;
@@ -109,6 +127,8 @@ public class Dexter : MonoBehaviour {
       stateString += ("Cos: " + state[i + 5] + ", ");
       //stateString += ("Sent Position: " + state[i + 6]*4 + ", ");
       stateString += "\n";
+
+      //if(jointNumber == 4) { Debug.DrawLine(Vector3.up * state[i], (Vector3.up * state[i]) + Vector3.right); }
 
       jointNumber++;
     }
