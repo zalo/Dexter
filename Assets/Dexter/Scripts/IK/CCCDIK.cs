@@ -18,7 +18,7 @@ public class CCCDIK : MonoBehaviour {
     for (int it = 0; it < 1; it++) {
       //Move toward main target
       for (int j = 0; j < joints.Length; j++) {
-        joints[j].Evaluate(Tooltip, Target, j < 2);
+        joints[j].Evaluate(Tooltip, Target, false);// j < 2);
       }
 
       //Find the closest point 
