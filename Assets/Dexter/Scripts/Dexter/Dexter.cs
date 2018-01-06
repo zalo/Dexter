@@ -109,8 +109,9 @@ public class Dexter : MonoBehaviour {
     for (int i = 10; i < 60; i += 10) {
       Quaternion jointRot;
       float posState = state[i];// * (jointNumber > 2 ? 0.1f : 1f);
-      float forceState = state[i + 1] * (jointNumber > 2 ? 0.125f : 1f);// * (jointNumber == 1 ? -1f : 1f);
-      float totalRotation = (posState + forceState) / -3600f; ;// state[i + 2] + forceState + (state[i + 6]*-4f)) / -3600f;
+      float deltaState = state[i + 1] * (jointNumber > 2 ? 0.125f : 1f);// * (jointNumber == 1 ? -1f : 1f);
+      float forceState = state[i + 3];// * (jointNumber == 1 ? -1f : 1f);
+      float totalRotation = (posState + deltaState + forceState) / -3600f; ;// state[i + 2] + forceState + (state[i + 6]*-4f)) / -3600f;
       if (jointNumber == 0 || jointNumber == 4) {
         jointRot = Quaternion.Euler(0f, totalRotation * ((jointNumber == 4)|| (jointNumber == 0) ? -1f : 1f), 0f);
       } else {
