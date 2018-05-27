@@ -1,9 +1,7 @@
 fileFormatVersion: 2
 guid: ac7d57aa21e28b14bac824287a5ccc81
-timeCreated: 1487150242
-licenseType: Free
 ModelImporter:
-  serializedVersion: 19
+  serializedVersion: 22
   fileIDToRecycleName:
     100000: ' 10'
     100002: ' 100'
@@ -1516,26 +1514,94 @@ ModelImporter:
     4300304: ID900
     4300306: ID906
     9500000: //RootNode
+    2186277476908879412: ImportLogs
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID155
+    second: {fileID: 2100000, guid: 1cc2dbbdbe8796d49ab19d5a5c95f3c9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID199
+    second: {fileID: 2100000, guid: cf4d831ea2b79c74fb548ae0695d888f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID207
+    second: {fileID: 2100000, guid: 18398a2d72aa5b949aa9d6526efdab95, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID227
+    second: {fileID: 2100000, guid: ce7b08267c813c54cbf84fcd7d9e6a7d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID235
+    second: {fileID: 2100000, guid: ec83f9d1f483b2349abfdc09db816eaa, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID249
+    second: {fileID: 2100000, guid: 03061d07c6372f949a56aaedc7d31952, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID35
+    second: {fileID: 2100000, guid: 6c8a4092e429316419713917da4ef911, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID411
+    second: {fileID: 2100000, guid: f7010e8adde998942a2f7b12cba8cd86, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID61
+    second: {fileID: 2100000, guid: d9855b9594a8c40469a227bca09e11d5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID69
+    second: {fileID: 2100000, guid: ba053a11bc1337b4cbbfefa6c37f74f4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID869
+    second: {fileID: 2100000, guid: 332b0fdd1224e504f82c4a30e8fd523e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ID9
+    second: {fileID: 2100000, guid: 7a60272d7ce880949970e38166dc79f4, type: 2}
   materials:
     importMaterials: 1
     materialName: 0
     materialSearch: 1
+    materialLocation: 0
   animations:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
     resampleCurves: 1
     optimizeGameObjects: 0
     motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
     animationCompression: 1
     animationRotationError: 0.5
     animationPositionError: 0.5
     animationScaleError: 0.5
     animationWrapMode: 0
     extraExposedTransformPaths: []
+    extraUserProperties: []
     clipAnimations: []
     isReadable: 1
   meshes:
@@ -1543,13 +1609,18 @@ ModelImporter:
     globalScale: 0.001
     meshCompression: 0
     addColliders: 0
+    importVisibility: 0
     importBlendShapes: 1
+    importCameras: 0
+    importLights: 0
     swapUVChannels: 0
     generateSecondaryUV: 0
     useFileUnits: 1
     optimizeMeshForGPU: 1
     keepQuads: 0
     weldVertices: 1
+    preserveHierarchy: 0
+    indexFormat: 1
     secondaryUVAngleDistortion: 8
     secondaryUVAreaDistortion: 15.000001
     secondaryUVHardAngle: 88
@@ -1559,6 +1630,7 @@ ModelImporter:
     normalSmoothAngle: 60
     normalImportMode: 0
     tangentImportMode: 3
+    normalCalculationMode: 0
   importAnimation: 1
   copyAvatar: 0
   humanDescription:

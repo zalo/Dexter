@@ -15,16 +15,12 @@ public class IMUCalibration : MonoBehaviour {
 	void Update () {
     if (Input.GetKeyDown(key1) || Input.GetKeyDown(key2)) {
       if (Input.GetKeyDown(key1)) {
-        dexter.lastRotatorRotTime = Time.time;
-
         if (rotatorRotation == 0) {
           rotatorRotation = -90 * 3600;
         } else {
           rotatorRotation = 0;
         }
       } else if (Input.GetKeyDown(key2)) {
-        dexter.lastEndRotTime = Time.time;
-
         if (endRotation == 0) {
           endRotation = -90 * 3600;
         } else {

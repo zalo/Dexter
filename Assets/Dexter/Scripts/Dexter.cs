@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -10,67 +11,62 @@ public class Dexter : MonoBehaviour {
   public Transform[] joints;
   public byte[] ip = { 192, 168, 1, 250 };
   float sendTimer = 0;
-  ProduceConsumeBuffer<Quaternion>[] jointBuffer = new ProduceConsumeBuffer<Quaternion>[5];
-  ProduceConsumeBuffer<string> stringBuffer = new ProduceConsumeBuffer<string>(10);
+  ConcurrentQueue<Quaternion>[] jointBuffer = new ConcurrentQueue<Quaternion>[5];
+  ConcurrentQueue<string> stringBuffer = new ConcurrentQueue<string>();
   Quaternion[] jointAngles = new Quaternion[5];
 
   public TextMesh text;
-  float lastEndRot = 0f;
-  public float lastEndRotTime;
-  float lastRotatorRot = 0f;
-  public float lastRotatorRotTime;
-  public float lastRotUpdateTime;
 
   void Start() {
     for(int i = 0; i<jointBuffer.Length; i++) {
-      jointBuffer[i] = new ProduceConsumeBuffer<Quaternion>(10);
+      jointBuffer[i] = new ConcurrentQueue<Quaternion>();
     }
 
     dexterSocket = new TcpClient();
     dexterSocket.SendBufferSize = 128;
     dexterSocket.ReceiveBufferSize = 240;
     try {
-      dexterSocket.Connect(new IPAddress(ip), 50000);
-      if (dexterSocket.Connected) {
-        Debug.Log("Connected to " + dexterSocket.Client.RemoteEndPoint);
+      IPAddress address = new IPAddress(ip);
+      IAsyncResult result = dexterSocket.BeginConnect(address, 50000, null, null);
+      bool success = result.AsyncWaitHandle.WaitOne(1000, true);
+
+      if (success && dexterSocket.Connected) {
+        dexterSocket.EndConnect(result);
+
+        Debug.Log("Connected to " + dexterSocket.Client.RemoteEndPoint, this);
         //sendStringToDexter(dexterSocket, "S StartSpeed 10000;");
         //sendStringToDexter(dexterSocket, "S MaxSpeed 250000;");
         sendStringToDexter(dexterSocket, "a 0 0 0 0 0;");
+      } else {
+        dexterSocket.Close();
+        enabled = false;
+        throw new TimeoutException("Connection attempt to Dexter timed out.  " +
+                                   "Check that this is the correct IP Address: "+ address);
       }
     } catch (Exception e) {
-      Debug.Log(e.ToString());
+      Debug.Log(e.ToString(), this);
     }
   }
 
-  int count = 0;
   void Update() {
-    //Heartbeat the Dexter to query its current pose
-    if (dexterSocket != null && dexterSocket.Connected && sendTimer < Time.time) {
-      sendStringToDexter(dexterSocket, "g;");
-      count++;
-      sendTimer += 0.016f;
+    try {
+      //Heartbeat the Dexter to query its current pose
+      if (dexterSocket != null && dexterSocket.Connected && sendTimer < Time.time) {
+        sendStringToDexter(dexterSocket, "g;");
+        sendTimer = Time.time + 0.016f; //+= 0.016f; //<- Use this instead if you want it to never skip a beat (susceptible to death spirals)
+      }
+    } catch (NullReferenceException e) {
+      Debug.LogWarning("Dexter was disconnected!\n"+e.StackTrace, this);//Not connected!
     }
 
     //Dequeue the joint angles that were enqueued from the other (socket) thread
     //This is necessary since you cannot set joint angles directly from another thread
-    for(int i=0; i<5; i++) {
+    for (int i=0; i<5; i++) {
       Quaternion jointRot = Quaternion.identity;
       if (jointBuffer[i].TryDequeue(out jointRot)) {
         jointAngles[i] = Quaternion.Slerp(joints[i].localRotation, jointRot, 1f);
         joints[i].localRotation = jointAngles[i];
-
-        if (i == 3) {
-          float angle = MoveToIK.getAngle(joints[i].localRotation, Vector3.right) / 90f;
-          Debug.DrawLine(((lastRotUpdateTime - lastRotatorRotTime) * Vector3.right) + (Vector3.up * lastRotatorRot), ((Time.time - lastRotatorRotTime) * Vector3.right) + (Vector3.up * angle), Color.green, 5f);
-          lastRotatorRot = angle;
-        } else if (i == 4) {
-          float angle = MoveToIK.getAngle(joints[i].localRotation, Vector3.right) / 90f;
-          Debug.DrawLine(((lastRotUpdateTime - lastEndRotTime) * Vector3.right) + (Vector3.up * lastEndRot), ((Time.time - lastEndRotTime) * Vector3.right) + (Vector3.up * angle), Color.red, 5f);
-          lastEndRot = angle;
-          lastRotUpdateTime = Time.time;
-        }
       }
-
     }
 
     string toDisplay;
@@ -105,6 +101,7 @@ public class Dexter : MonoBehaviour {
     string stateString = "";
     //Enumerates through the state on each joint individually
     //Unclear what each of these mean exactly, but good to have
+    //(Some may be incorrect unit conversions, be careful!)
     int jointNumber = 0;
     for (int i = 10; i < 60; i += 10) {
       Quaternion jointRot;
@@ -118,7 +115,7 @@ public class Dexter : MonoBehaviour {
         jointRot = Quaternion.Euler(totalRotation, 0f, 0f);
       }
 
-      jointBuffer[jointNumber].TryEnqueue(ref jointRot);
+      jointBuffer[jointNumber].Enqueue(jointRot);
 
       stateString += ("Pos: " + state[i] + ", ");
       stateString += ("Delta: " + state[i + 1] + ", ");
@@ -129,20 +126,18 @@ public class Dexter : MonoBehaviour {
       //stateString += ("Sent Position: " + state[i + 6]*4 + ", ");
       stateString += "\n";
 
-      //if(jointNumber == 4) { Debug.DrawLine(Vector3.up * state[i], (Vector3.up * state[i]) + Vector3.right); }
-
       jointNumber++;
     }
     //text.text = stateString;
-    stringBuffer.TryEnqueue(ref stateString);
-    //Debug.Log(stateString);
+    stringBuffer.Enqueue(stateString);
+    //Debug.Log(stateString, this);
   }
 
   void OnDestroy () {
     try {
       dexterSocket.Close();
     } catch (Exception e) {
-      Debug.Log(e.ToString());
+      Debug.Log(e.ToString(), this);
     }
   }
 }
