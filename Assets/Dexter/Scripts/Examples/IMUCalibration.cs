@@ -28,7 +28,7 @@ public class IMUCalibration : MonoBehaviour {
         }
       }
 
-      dexter.sendStringToDexter(dexter.dexterSocket, "a 0 0 0 " + rotatorRotation + " " + endRotation + "; ");
+      dexter.sendStringToDexter("a 0 0 0 " + rotatorRotation + " " + endRotation + "; ");
     }
   }
 }

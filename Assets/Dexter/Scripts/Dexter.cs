@@ -34,9 +34,9 @@ public class Dexter : MonoBehaviour {
         dexterSocket.EndConnect(result);
 
         Debug.Log("Connected to " + dexterSocket.Client.RemoteEndPoint, this);
-        //sendStringToDexter(dexterSocket, "S StartSpeed 10000;");
-        //sendStringToDexter(dexterSocket, "S MaxSpeed 250000;");
-        sendStringToDexter(dexterSocket, "a 0 0 0 0 0;");
+        //sendStringToDexter("S StartSpeed 0;");
+        //sendStringToDexter("S MaxSpeed 200000;");
+        sendStringToDexter("a 0 0 0 0 0;");
       } else {
         dexterSocket.Close();
         enabled = false;
@@ -52,7 +52,7 @@ public class Dexter : MonoBehaviour {
     try {
       //Heartbeat the Dexter to query its current pose
       if (dexterSocket != null && dexterSocket.Connected && sendTimer < Time.time) {
-        sendStringToDexter(dexterSocket, "g;");
+        sendStringToDexter("g;");
         sendTimer = Time.time + 0.016f; //+= 0.016f; //<- Use this instead if you want it to never skip a beat (susceptible to death spirals)
       }
     } catch (NullReferenceException e) {
@@ -71,11 +71,11 @@ public class Dexter : MonoBehaviour {
 
     string toDisplay;
     while(stringBuffer.TryDequeue(out toDisplay)) {
-      text.text = toDisplay;
+      if (text != null) { text.text = toDisplay; }
     }
   }
 
-  public void sendStringToDexter(TcpClient socket, string command) {
+  public void sendStringToDexter(string command) {
     byte[] toSend = new byte[128];
     //The first four values don't do anything yet
     byte[] asciiBytes = Encoding.ASCII.GetBytes("xxx xxx xxx xxx "+ command);
