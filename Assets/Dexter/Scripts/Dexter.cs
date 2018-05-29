@@ -10,18 +10,18 @@ public class Dexter : MonoBehaviour {
   public TcpClient dexterSocket;
   public Transform[] joints;
   public byte[] ip = { 192, 168, 1, 250 };
-  float sendTimer = 0;
-  ConcurrentQueue<Quaternion>[] jointBuffer = new ConcurrentQueue<Quaternion>[5];
-  ConcurrentQueue<string> stringBuffer = new ConcurrentQueue<string>();
-  Quaternion[] jointAngles = new Quaternion[5];
+  public TextMesh diagnosticText;
 
-  public TextMesh text;
+  [NonSerialized]
+  public Vector3Int[] rawJointAngles = new Vector3Int[5];
+
+  float sendTimer = 0; bool hasStarted = false;
+  ConcurrentQueue<Vector3Int[]> jointAngleBuffer = new ConcurrentQueue<Vector3Int[]>();
+  ConcurrentQueue<string> diagnosticStringBuffer = new ConcurrentQueue<string>();
 
   void Start() {
-    for(int i = 0; i<jointBuffer.Length; i++) {
-      jointBuffer[i] = new ConcurrentQueue<Quaternion>();
-    }
-
+    if (hasStarted) { return; }
+    hasStarted = true;
     dexterSocket = new TcpClient();
     dexterSocket.SendBufferSize = 128;
     dexterSocket.ReceiveBufferSize = 240;
@@ -34,9 +34,9 @@ public class Dexter : MonoBehaviour {
         dexterSocket.EndConnect(result);
 
         Debug.Log("Connected to " + dexterSocket.Client.RemoteEndPoint, this);
-        //sendStringToDexter("S StartSpeed 0;");
-        //sendStringToDexter("S MaxSpeed 200000;");
-        sendStringToDexter("a 0 0 0 0 0;");
+        //sendStringToDexter("S StartSpeed 0;"); //Good defaults
+        //sendStringToDexter("S MaxSpeed 200000;"); //Good defaults
+        //sendStringToDexter("a 0 0 0 0 0;"); //Good defaults
       } else {
         dexterSocket.Close();
         enabled = false;
@@ -49,48 +49,58 @@ public class Dexter : MonoBehaviour {
   }
 
   void Update() {
-    try {
-      //Heartbeat the Dexter to query its current pose
-      if (dexterSocket != null && dexterSocket.Connected && sendTimer < Time.time) {
-        sendStringToDexter("g;");
-        sendTimer = Time.time + 0.016f; //+= 0.016f; //<- Use this instead if you want it to never skip a beat (susceptible to death spirals)
-      }
-    } catch (NullReferenceException e) {
-      Debug.LogWarning("Dexter was disconnected!\n"+e.StackTrace, this);//Not connected!
+    if (sendTimer < Time.time) {
+      sendStringToDexter("g;");
+      sendTimer = Time.time + 0.016f; //+= 0.016f; //<- Use this instead if you want it to never skip a beat (potentially susceptible to death spirals)
     }
 
     //Dequeue the joint angles that were enqueued from the other (socket) thread
     //This is necessary since you cannot set joint angles directly from another thread
-    for (int i=0; i<5; i++) {
-      Quaternion jointRot = Quaternion.identity;
-      if (jointBuffer[i].TryDequeue(out jointRot)) {
-        jointAngles[i] = Quaternion.Slerp(joints[i].localRotation, jointRot, 1f);
-        joints[i].localRotation = jointAngles[i];
-      }
+    Vector3Int[] jointRot;
+    while (jointAngleBuffer.TryDequeue(out jointRot)) {
+      rawJointAngles = jointRot;
     }
 
+    //Decode the raw joint angles and apply them to the Visual Model
+    for (int jointNumber = 0; jointNumber < 5; jointNumber++) {
+      float totalRotation = (rawJointAngles[jointNumber][0] +
+                            (rawJointAngles[jointNumber][1] / (jointNumber > 2 ? 8 : 1)) +
+                             rawJointAngles[jointNumber][2]) / -3600f;
+      bool baseOrYaw = (jointNumber == 4) || (jointNumber == 0);
+      joints[jointNumber].localRotation = Quaternion.Euler(baseOrYaw ? 0f : totalRotation, 
+                                                           baseOrYaw ? -totalRotation : 0f, 
+                                                           0f);
+    }
+
+    //Also write this status text to a screen
     string toDisplay;
-    while(stringBuffer.TryDequeue(out toDisplay)) {
-      if (text != null) { text.text = toDisplay; }
+    while(diagnosticStringBuffer.TryDequeue(out toDisplay)) {
+      if (diagnosticText != null) { diagnosticText.text = toDisplay; }
     }
   }
 
   public void sendStringToDexter(string command) {
-    byte[] toSend = new byte[128];
-    //The first four values don't do anything yet
-    byte[] asciiBytes = Encoding.ASCII.GetBytes("xxx xxx xxx xxx "+ command);
-    Array.Copy(asciiBytes, toSend, asciiBytes.Length);
-    //dexterSocket.Client.Send(toSend);
-    SocketAsyncEventArgs sendArgs = new SocketAsyncEventArgs();
-    sendArgs.SetBuffer(toSend, 0, 128);
-    sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(completeSendingCommand);
-    dexterSocket.Client.SendAsync(sendArgs);
+    if (!hasStarted) { Start(); }
+    try {
+      if (dexterSocket != null && dexterSocket.Connected) {
+        byte[] toSend = new byte[128];
+        //The first four values don't do anything yet
+        byte[] asciiBytes = Encoding.ASCII.GetBytes("xxx xxx xxx xxx " + command);
+        Array.Copy(asciiBytes, toSend, asciiBytes.Length);
+        SocketAsyncEventArgs sendArgs = new SocketAsyncEventArgs();
+        sendArgs.SetBuffer(toSend, 0, toSend.Length);
+        sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(completeSendingCommand);
+        dexterSocket.Client.SendAsync(sendArgs);
+      }
+    } catch (NullReferenceException e) {
+      Debug.LogWarning("Dexter was disconnected!\n" + e.StackTrace, this);//Not connected!
+    }
   }
 
   void completeSendingCommand(object sender = null, SocketAsyncEventArgs e = null) {
     byte[] receiveArray = new byte[240];
     SocketAsyncEventArgs receiveArgs = new SocketAsyncEventArgs();
-    receiveArgs.SetBuffer(receiveArray, 0, 240);
+    receiveArgs.SetBuffer(receiveArray, 0, receiveArray.Length);
     receiveArgs.Completed += new EventHandler<SocketAsyncEventArgs>(receiveUpdatedState);
     dexterSocket.Client.ReceiveAsync(receiveArgs);
   }
@@ -98,39 +108,29 @@ public class Dexter : MonoBehaviour {
   void receiveUpdatedState(object sender, SocketAsyncEventArgs e) {
     int[] state = new int[60];
     Buffer.BlockCopy(e.Buffer, 0, state, 0, 240);
-    string stateString = "";
+    StringBuilder diagnosticStateString = new StringBuilder(7);
+    Vector3Int[] jointAngles = new Vector3Int[5];
+
     //Enumerates through the state on each joint individually
     //Unclear what each of these mean exactly, but good to have
     //(Some may be incorrect unit conversions, be careful!)
     int jointNumber = 0;
     for (int i = 10; i < 60; i += 10) {
-      Quaternion jointRot;
-      float posState = state[i];// * (jointNumber > 2 ? 0.1f : 1f);
-      float deltaState = state[i + 1] * (jointNumber > 2 ? 0.125f : 1f);// * (jointNumber == 1 ? -1f : 1f);
-      float forceState = state[i + 3];// * (jointNumber == 1 ? -1f : 1f);
-      float totalRotation = (posState + deltaState + forceState) / -3600f; ;// state[i + 2] + forceState + (state[i + 6]*-4f)) / -3600f;
-      if (jointNumber == 0 || jointNumber == 4) {
-        jointRot = Quaternion.Euler(0f, totalRotation * ((jointNumber == 4)|| (jointNumber == 0) ? -1f : 1f), 0f);
-      } else {
-        jointRot = Quaternion.Euler(totalRotation, 0f, 0f);
-      }
+      jointAngles[jointNumber] = new Vector3Int(state[i], state[i + 1], state[i + 3]);
 
-      jointBuffer[jointNumber].Enqueue(jointRot);
-
-      stateString += ("Pos: " + state[i] + ", ");
-      stateString += ("Delta: " + state[i + 1] + ", ");
-      stateString += ("PID Delta: " + state[i + 2] + ", ");
-      stateString += ("Force Delta: " + state[i + 3] + ", ");
-      stateString += ("Sin: " + state[i + 4] + ", ");
-      stateString += ("Cos: " + state[i + 5] + ", ");
+      diagnosticStateString.Append("Pos: " + state[i] + ", ");
+      diagnosticStateString.Append("Delta: " + state[i + 1] + ", ");
+      diagnosticStateString.Append("PID Delta: " + (state[i + 2] / (jointNumber > 2 ? 8 : 1)) + ", ");
+      diagnosticStateString.Append("Force Delta: " + state[i + 3] + ", ");
+      diagnosticStateString.Append("Sin: " + state[i + 4] + ", ");
+      diagnosticStateString.Append("Cos: " + state[i + 5] + ", ");
       //stateString += ("Sent Position: " + state[i + 6]*4 + ", ");
-      stateString += "\n";
 
+      diagnosticStateString.AppendLine();
       jointNumber++;
     }
-    //text.text = stateString;
-    stringBuffer.Enqueue(stateString);
-    //Debug.Log(stateString, this);
+    jointAngleBuffer.Enqueue(jointAngles);
+    diagnosticStringBuffer.Enqueue(diagnosticStateString.ToString());
   }
 
   void OnDestroy () {

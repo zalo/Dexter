@@ -18,8 +18,8 @@ public class HemisphereDotter : MonoBehaviour {
     originalRotation = Tooltip.rotation;
     GeneratePointPattern(numberOfPoints);
     if (isStepping) {
-      SetEffectorPositionRotation(transform.position + (transform.up*transform.lossyScale.y*0.5f), Quaternion.Euler(180f, 0f, 0f));
-      SetPosition(currentDot);
+      MoveEffectorPositionRotation(transform.position + (transform.up*transform.lossyScale.y*0.5f), Quaternion.Euler(180f, 0f, 0f));
+      PokePosition(currentDot);
     }
   }
 
@@ -28,7 +28,7 @@ public class HemisphereDotter : MonoBehaviour {
       if (steppingTimer > steppingInterval) {
         if (currentDot < points.Length - 1) {
           currentDot++;
-          SetPosition(currentDot);
+          PokePosition(currentDot);
           steppingTimer -= steppingInterval;
         } else {
           currentDot = 0;
@@ -41,30 +41,37 @@ public class HemisphereDotter : MonoBehaviour {
     }
   }
 
-  public void SetPosition(int currentDot) {
+  public void PokePosition(int currentDot) {
     Quaternion toolRotation = Quaternion.LookRotation(points[currentDot] - transform.position, Vector3.down);
     Vector3 normalOffset = (transform.position - points[currentDot]).normalized * 0.05f;
 
-    SetEffectorPositionRotation(points[currentDot] + normalOffset, toolRotation);
-    SetEffectorPositionRotation(points[currentDot], toolRotation);
-    SetEffectorPositionRotation(points[currentDot] + normalOffset, toolRotation);
+    MoveEffectorPositionRotation(points[currentDot] + normalOffset, toolRotation);
+    MoveEffectorPositionRotation(points[currentDot], toolRotation);
+    MoveEffectorPositionRotation(points[currentDot] + normalOffset, toolRotation);
   }
 
-  void SetEffectorPositionRotation(Vector3 position, Quaternion rotation) {
-    Tooltip.position = position;
-    Tooltip.rotation = rotation;
-    ghostIK.Update();
-    ghostIK.moveDexterToIK(dexterArm);
+  void MoveEffectorPositionRotation(Vector3 position, Quaternion rotation) {
+    if (Tooltip != null) {
+      Tooltip.position = position;
+      Tooltip.rotation = rotation;
+    }
+    if (ghostIK != null) {
+      ghostIK.Update();
+      ghostIK.moveDexterToIK(dexterArm);
+    }
   }
 
+  //Draw the Dots to Poke
   public void OnDrawGizmos() {
     if (!Application.isPlaying || points == null) { GeneratePointPattern(numberOfPoints); }
-    foreach(Vector3 dot in points) {
-      Gizmos.DrawSphere(dot, 0.005f);
+    Gizmos.color = Color.green;
+    for (int i = 0; i < points.Length; i++) {
+      if(i == currentDot+1) { Gizmos.color = Color.white; }
+      Gizmos.DrawSphere(points[i], 0.005f);
     }
-    for (int i = currentDot; i < Mathf.Min(currentDot+3, points.Length-1); i++) {
-      Gizmos.DrawLine(points[i], points[i + 1]);
-    }
+    //for (int i = currentDot; i < Mathf.Min(currentDot+3, points.Length-1); i++) {
+    //  Gizmos.DrawLine(points[i], points[i + 1]);
+    //}
   }
 
   //Adapted from: https://stackoverflow.com/a/26127012
@@ -82,5 +89,11 @@ public class HemisphereDotter : MonoBehaviour {
         points[counter++] = transform.TransformPoint(new Vector3(Mathf.Cos(phi) * r, y,
                                                                  Mathf.Sin(phi) * r) * 0.5f);
     }
+  }
+
+  //Reset when we're Done
+  private void OnDestroy() {
+    MoveEffectorPositionRotation(transform.position + (transform.up * transform.lossyScale.y * 0.5f), Quaternion.Euler(180f, 0f, 0f));
+    dexterArm.sendStringToDexter("a 0 0 0 0 0;");
   }
 }

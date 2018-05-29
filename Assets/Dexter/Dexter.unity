@@ -9278,7 +9278,7 @@ MonoBehaviour:
   - {fileID: 1930142878}
   - {fileID: 1838830668}
   ip: c0a801fa
-  text: {fileID: 1097574696}
+  diagnosticText: {fileID: 1097574696}
 --- !u!114 &654372342
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9293,7 +9293,7 @@ MonoBehaviour:
   dexter: {fileID: 654372341}
   ik: {fileID: 106899555}
   moveKey: 32
-  resetkey: 114
+  resetKey: 114
 --- !u!4 &654372343
 Transform:
   m_ObjectHideFlags: 0
